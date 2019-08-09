@@ -96,11 +96,10 @@ Commands:
   bee run              Execute deploy script file, e.g.
 
                        bee run
-                       --script <js deploy script>, e.g --script
-                       deploy2contiprelive.js
+                       --script <js deploy script>, e.g --script myscript.js
                        [
                        --region <region>, e.g. --region eu-west-1,
-                       --profile <aws profile>, e.g. --profile conti-rvd-test
+                       --profile <aws profile>, e.g. --profile myprofile
                        ]
 
   bee setup            Setup bee-tools, e.g.
@@ -268,13 +267,13 @@ Resources:
       CodeUri: ../build/artifacts/my-lambda-handler.zip # artifact reference defined relative to infrastructure.yml
 ````
 
-To deploy to __eu-west-1__ region with AWS account profile __conti-rvd-test__ using the __service name__ and __stage__ defined in __deployment/development.yml__ in our case the stage name is __myDeveloperStage__. __development.yml__ is used as default if the --stage is not specified:
+To deploy to __eu-west-1__ region with AWS account profile __myprofile__ using the __service name__ and __stage__ defined in __deployment/development.yml__ in our case the stage name is __myDeveloperStage__. __development.yml__ is used as default if the --stage is not specified:
 ````bash
-$ bee deploy --profile=conti-rvd-test --region-eu-west-1
+$ bee deploy --profile=myprofile --region-eu-west-1
 ````
 
 To deploy to __integration__ stage use the following command, the values specified in __deployment/integration.yml__ will be used for deployment:
 ````bash
-$ bee deploy --stage integration --profile=conti-rvd-test --region-eu-west-1
+$ bee deploy --stage integration --profile=myprofile --region-eu-west-1
 ````
 
