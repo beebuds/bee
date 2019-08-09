@@ -1,0 +1,35 @@
+{
+    "branch": "master",
+    "getLastRelease": "last-release-git",
+    "githubUrl": "https://git-code.asw.zone",
+    "githubApiPathPrefix": "/api/v3",
+    "ci": true,
+    "plugins": [
+        "@semantic-release/commit-analyzer",
+        "@semantic-release/release-notes-generator",
+        [
+            "@semantic-release/changelog",
+            {
+                "changelogFile": "CHANGELOG.md"
+            }
+        ],
+        [
+            "@semantic-release/git",
+            {
+                "assets": [
+                    "CHANGELOG.md"
+                ]
+            }
+        ],
+        [
+            "@semantic-release/github",
+            {
+                "assets": [
+                    {
+                        "path": "build/**"
+                    }
+                ]
+            }
+        ]
+    ]
+}

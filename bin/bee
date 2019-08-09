@@ -1,0 +1,398 @@
+#! /usr/bin/env node
+
+const yargs = require("yargs");
+const shell = require('shelljs');
+const path = require('path');
+const fs = require('fs-extra');
+const constants = require('./lib/constants');
+const releaseRCTemplate = require('../templates/releaserc.template.json');
+const utils = require('./lib/utils');
+
+function getProfileAndRegionArgs(args) {
+    let profileAndRegionArgs = ``;
+    if (args.profile) {
+        if (args.region) {
+            profileAndRegionArgs = `--region=${args.region}  --profile=${args.profile}`;
+        } else {
+            profileAndRegionArgs = `--profile=${args.profile}`;
+        }
+
+    } else {
+        if (args.region) {
+            profileAndRegionArgs = `--region=${args.region}`;
+        }
+    }
+    return profileAndRegionArgs;
+}
+
+let exitCode = 0;
+const argv = yargs.usage("$0 command")
+    .command("deploy", `Merge, package and deploy CloudFormation template to AWS, e.g.
+    \nbee deploy
+    --region <region>
+    [
+        --release <'true', 'false'>, defaults to 'false'
+        --stage <stage name, default: development>,
+        --profile <AWS profile>
+    ]\n`, (yargs) => {
+            const args = yargs.argv;
+            let arguments = ``;
+            if (args.stage) {
+                arguments = arguments.concat(` --stage ${args.stage}`);
+            }
+            if (args.release != null && args.release && (args.release === true || args.release.toLowerCase() === 'true')) {
+                exitCode = shell.exec(`bee prepare-release --branch master`).code;
+                const versionFile = path.resolve(`${constants.INFRASTRUCTURE_CONSTANTS.defaultOutDirectory}/release.json`);
+                if (fs.existsSync(versionFile)) {
+                    const { nextVersion } = require(versionFile);
+                    if (!nextVersion) {
+                        console.error(`ERROR: Could not determine the release version.`);
+                        exitCode = -1;
+                    } else {
+                        exitCode = shell.exec(`cf-deploy --release_version ${nextVersion} ${arguments} ${getProfileAndRegionArgs(yargs.argv)}`).code;
+                    }
+                }
+            } else {
+                exitCode = shell.exec(`cf-deploy ${arguments} ${getProfileAndRegionArgs(yargs.argv)}`).code;
+            }
+        })
+    .command("itest", `Run specified integration tests, e.g.
+    \nbee itest
+    --test_spec <path patterns like */**/*.itest.yml>
+    --stack_name <deployed CloudFormation stack> or --api_id <API Gateway id>
+    [--timeout <duration in ms before timeout>
+    --region <region>
+    --profile <AWS profile>]
+    --test_result_file <output file to store test results as junit xml> \n`, (yargs) => {
+            const args = yargs.argv;
+            let arguments = ``;
+            if (args.stack_name) {
+                arguments = arguments.concat(` --stack_name ${args.stack_name}`);
+            }
+            if (args.timeout) {
+                arguments = arguments.concat(` --timeout ${args.timeout}`);
+            }
+            if (args.api_id) {
+                arguments = arguments.concat(` --api_id ${args.api_id}`);
+            }
+            if (args.test_spec) {
+                arguments = arguments.concat(` --test_spec ${args.test_spec}`);
+            }
+            if (args.test_result_file) {
+                arguments = arguments.concat(` --test_result_file ${args.test_result_file}`);
+            }
+            exitCode = shell.exec(`api-itest ${arguments} ${getProfileAndRegionArgs(yargs.argv)}`).code;
+        })
+    .command("merge", `Merge separated CloudFormation template into single template, e.g. 
+        \n bee merge 
+        [--infrastructure_file path/to/infrastructure.yml 
+         --template_file path/to/output-cf-template.yml]\n`, (yargs) => {
+            const args = yargs.argv;
+            let arguments = ``;
+            if (args.infrastructure_file) {
+                arguments = arguments.concat(` --infrastructure_file ${args.infrastructure_file}`);
+            }
+            if (args.output_file) {
+                arguments = arguments.concat(` --template_file ${args.output_file}`);
+            }
+            exitCode = shell.exec(`cf-merge ${arguments}`).code;
+        })
+    .command("package", `Package CloudFormation template, e.g.
+\nbee package
+--bucket my-s3-bucket
+--bucket_prefix stage/some-prefix
+[--template_file my-cf-template.yml
+--output_template_file my-packaged-output-template.yml]\n`, (yargs) => {
+            const args = yargs.argv;
+            let arguments = ``;
+            if (args.bucket) {
+                arguments = arguments.concat(` --bucket ${args.bucket}`);
+            }
+            if (args.bucket_prefix) {
+                arguments = arguments.concat(` --bucket_prefix ${args.bucket_prefix}`);
+            }
+            if (args.template_file) {
+                arguments = arguments.concat(` --template_file ${args.template_file}`);
+            }
+            if (args.output_template_file) {
+                arguments = arguments.concat(` --output_template_file ${args.output_template_file}`);
+            }
+            exitCode = shell.exec(`cf-package ${arguments} ${getProfileAndRegionArgs(yargs.argv)}`).code;
+        })
+    .command("just-deploy", `Deploy given CloudFormation template to AWS, e.g. 
+    \nbee just-deploy
+    --stack_name my-stack 
+    --parameters_file path/to/parameters.yml 
+    --template_file path/to/my-cf-template.yml 
+    [--profile <aws profile> --region <region>]\n`, (yargs) => {
+            const args = yargs.argv;
+            let arguments = ``;
+            if (args.parameters_file) {
+                arguments = arguments.concat(` --parameters_file ${args.parameters_file}`);
+            }
+            if (args.template_file) {
+                arguments = arguments.concat(` --template_file ${args.template_file}`);
+            }
+            if (args.stack_name) {
+                arguments = arguments.concat(` --stack_name ${args.stack_name}`);
+            }
+            exitCode = shell.exec(`cf-just-deploy ${arguments} ${getProfileAndRegionArgs(yargs.argv)}`).code;
+        })
+    .command("publish", `Publish versioned CloudFormation template, e.g.
+    \nbee publish
+    [--profile <AWS profile>]`, (yargs) => {
+            const args = yargs.argv;
+            exitCode = shell.exec(`cf-publish ${(args.profile) ? `--profile=${args.profile}` : ``}`).code;
+        })
+    .command("prepare-release", `Determine the next release version according to the current commit statements , e.g.
+        \nbee prepare-release
+        [
+            --output_file, file to store the release versions (defaults to .bee/release.json)
+        ]`, (yargs) => {
+            const args = yargs.argv;
+            let arguments = ``;
+            const getVersionsFromShellResult = (shellResult) => {
+                const res = shellResult.split('\n').filter(item => {
+                    return item.trim().includes("The next release version is ") || item.trim().includes("Found git tag ");
+                }).map(rawVersion => rawVersion.split(' ').slice(-1)[0]);
+                console.log(`Got versions: ${JSON.stringify(res)}`);
+                return {
+                    nextVersion: res[1],
+                    previousVersion: res[0]
+                }
+            };
+
+            try {
+                const releaseRcFile = '.releaserc.json';
+                const fileExist = fs.existsSync(releaseRcFile);
+                let data = releaseRCTemplate;
+                if (!fileExist) {
+                    fs.writeFileSync(releaseRcFile, JSON.stringify(data), 'utf-8');
+                }
+            } catch (err) {
+                console.error(`ERROR: ${err.message}`, err.stack);
+                exitCode = 1;
+            }
+
+            if (args.branch) {
+                arguments = arguments.concat(` --branch ${args.branch}`);
+            }
+            console.log(`
+            shell env: ${JSON.stringify(shell.env)}
+            process env: ${JSON.stringify(process.env)}
+            `);
+            const shellResult = shell.exec(`git push --dry-run && npx -p last-release-git -p @semantic-release/changelog -p @semantic-release/commit-analyzer -p @semantic-release/git -p @semantic-release/github -p @semantic-release/release-notes-generator -p semantic-release semantic-release --dry-run ${arguments} --debug`);
+            const result = getVersionsFromShellResult(shellResult);
+            let outDir = constants.INFRASTRUCTURE_CONSTANTS.defaultOutDirectory;
+            if (args.output_file) {
+                outDir = path.dirname(args.output_file);
+            }
+
+            fs.mkdirpSync(outDir);
+            const outFile = (args.output_file) ? args.output_file : `${outDir}/release.json`;
+            fs.writeFileSync(outFile, JSON.stringify(result), 'utf-8');
+        })
+    .command("release", `Create a new release version, tag it in the git repo., generate relevant resources (e.g. CHANGELOG.MD, git hub release notes, etc.), e.g.
+        \nbee release
+        [
+            --check-release-json, check .bee/release.json whether a release is needed
+        ]
+        ]
+        `, (yargs) => {
+            const argv = yargs.argv;
+            const doRelease = () => {
+                try {
+                    exitCode = shell.exec(`npx -p last-release-git -p @semantic-release/changelog -p @semantic-release/commit-analyzer -p @semantic-release/git -p @semantic-release/github -p @semantic-release/release-notes-generator -p semantic-release semantic-release`).code;
+                } catch (err) {
+                    console.error(`ERROR: ${err.message}`, err.stack);
+                    exitCode = 1;
+                }
+            };
+            const noRelease = () => console.log(`*** NO RELEASE NEEDED ***`);
+            const releaseJsonFile = path.resolve('.bee/release.json');
+            if (argv['check-release-json']) {
+                if (fs.existsSync(releaseJsonFile)) {
+                    const releaseVersion = require(releaseJsonFile);
+                    if (releaseVersion.nextVersion) {
+                        doRelease();
+                    } else {
+                        noRelease();
+                    }
+                } else {
+                    noRelease();
+                }
+            } else {
+                doRelease();
+            }
+        })
+    .command("deploy-service", `Deploy a released service of given version to the specified stage, region and account, 
+        \nbee deploy-service
+        --service-name <name of the service>, e.g. --service-name spec-provider
+        --release-version <version>, e.g. --release-version 0.0.1
+        --stage <stage name>, e.g. --stage 
+        --region <region>, e.g. --region eu-west-1
+        [
+            --parameters key1=value1,key2=value2,..., e.g. --parameters SINGLE_PARAM=myvalue,LIST_PARAM=https://url1.com;https://url2.com
+            or --parameters-file <path parameters file (yml format)>, e.g. --paramters-file /path/to/my/parameters.yml
+        ]
+        `, (yargs) => {
+            const argv = yargs.argv;
+            let arguments = ``;
+            const serviceName = argv['service-name'];
+            const version = argv['release-version'];
+            const stage = argv.stage;
+            const region = argv.region;
+            const parameters = argv.parameters;
+            const parametersFile = argv['parameters-file'];
+            if (!serviceName || typeof (serviceName) !== 'string') {
+                console.error(`ERROR: Missing service name, use --service-name <name>, e.g. --service-name spec-provider`);
+                process.exit(1);
+            }
+            arguments = arguments.concat(`--service-name ${serviceName}`);
+            if (!version || typeof (version) !== 'string') {
+                console.error(`ERROR: Missing release version, use --release-version <version>, e.g. --release-version 1.0.10`);
+                process.exit(1);
+            }
+            arguments = arguments.concat(` --release-version ${version}`);
+            if (!stage || typeof (stage) !== 'string') {
+                console.error(`ERROR: Missing stage, use --stage <name>, e.g. --stage contilive`);
+                process.exit(1);
+            }
+            arguments = arguments.concat(` --stage ${stage}`);
+            if (!region || typeof (region) !== 'string') {
+                console.error(`ERROR: Missing region, use --region <region>, e.g. --region eu-west-1`);
+                process.exit(1);
+            }
+            arguments = arguments.concat(` --region ${region}`);
+            if (parameters && typeof (parameters) === 'string') {
+                arguments = arguments.concat(` --parameters ${parameters}`);
+            }
+            if (parametersFile && typeof (parametersFile) === 'string') {
+                arguments = arguments.concat(` --parameters-file ${parametersFile}`);
+            }
+            if (argv.profile && typeof (argv.profile) === 'string') {
+                arguments = arguments.concat(` --profile ${argv.profile}`);
+            }
+            exitCode = shell.exec(`deploy-service ${arguments}`);
+        })
+    .command("run", `Execute deploy script file, e.g.
+        \nbee run
+        --script <js deploy script>, e.g --script deploy2contiprelive.js
+        [
+            --region <region>, e.g. --region eu-west-1,
+            --profile <aws profile>, e.g. --profile conti-rvd-test
+        ]
+        `, (yargs) => {
+            const args = yargs.argv;
+            let script = args.script;
+            const isS3Url = () => args.script.includes('s3.amazonaws.com') || args.script.includes('s3://');
+            if (!script || typeof (script) !== 'string') {
+                console.error(`ERROR: Missing script, use --script <js file>, e.g. --script deploy2prelive.js`);
+                process.exit(1);
+            } else if (isS3Url()) {
+                let profileArgs = ''
+                if (args.profile) {
+                    profileArgs = `--profile ${args.profile}`;
+                }
+                console.log(`Downloading from s3 '${script}' ...`);
+                const downloadedScript = 'downloadedBeeScript.tmp.js';
+                if (shell.exec(`aws s3 cp ${script} ${downloadedScript} ${profileArgs}`).code !== 0) {
+                    console.error(`ERROR: Could not download script from s3.`);
+                    process.exit(1);
+                }
+                script = downloadedScript;
+            } else if (!fs.existsSync(args.script)) {
+                console.error(`ERROR: Could not find '${args.script}'`);
+                process.exit(1);
+            }
+            let optionalParams = '';
+            for (const a in args) {
+                if (a !== '_' && a !== '$0' && a !== 'dependencies') {
+                    const opt = `--${a} ${args[a]}`;
+                    optionalParams = optionalParams.concat((optionalParams) ? ` ${opt}` : opt);
+                }
+            }
+            let dependencies = 'shelljs yargs'
+            if (args.dependencies) {
+                const deps = args.dependencies.split(',').reduce((o, a) => o.concat((o) ? a : ` ${a}`));
+                dependencies = dependencies.concat(` ${deps}`);
+            }
+            console.log(`Prepare for running '${args.script}'...`);
+            exitCode = shell.exec(`npm i --no-save ${dependencies}`).code;
+            console.log(`Running ${optionalParams}'...`);
+            exitCode = shell.exec(`node ${script} ${optionalParams}`).code;
+            if (isS3Url()) {
+                fs.removeSync(script);
+            }
+        }).command("setup", `Setup bee-tools, e.g. 
+        \nbee setup`, (_yargs) => {
+                // exitCode = shell.exec(`bee-aws-upgrade --aws-cli-version ${constants.INFRASTRUCTURE_CONSTANTS.awsCliVersion}`).code;
+                exitCode = shell.exec(`node ./bin/bee-gradle-upgrade.js --gradle-version ${constants.GRADLE.version}`).code;
+            }).command("gradle", `Run gradle 
+            \nbee gradle <options>`, (_yargs) => {
+                    if (!fs.existsSync(constants.GRADLE.dir)) {
+                        exitCode = shell.exec(`bee-gradle-upgrade --gradle-version ${constants.GRADLE.version}`).code;
+                    }
+                    if (exitCode == 0) {
+                        const args = process.argv.slice(3);
+                        const options = args.reduce((o, a) => o.concat((o) ? ` ${a}` : a), '');
+                        const command = `${path.resolve(constants.GRADLE.command)} ${options}`;
+                        console.log(command);
+                        exitCode = shell.exec(command).code;
+                    } else {
+                        utils.rlog(`ERROR: Could not download and install gradle 'v${constants.GRADLE.version}'!`);
+                    }
+                }).command("oft",
+                    `Run openfasttrace,
+                    bee oft 
+                    --swad-version <version>, the version of the SWAD, e.g. --swad-version 1.8.0,
+                    <oft options>, see https://github.com/itsallcode/openfasttrace/raw/develop/doc/usage.txt
+                    `, (yargs) => {
+                        const yargv = yargs.argv;
+                        const swadVersionKey = 'swad-version';
+                        const swadVersion = yargv[swadVersionKey];
+
+                        if (!swadVersion || typeof (swadVersion) !== 'string') {
+                            utils.rlog(`Missing required parameter --swad-version <version>, use e.g. --swad-version 1.8.0`);
+                            process.exit(1);
+                        }
+                        let optArgs = yargv.profile && typeof (yargv.profile) === 'string' ? `--profile ${yargv.profile}` : '';
+                        const swadDir = `${constants.DEFAULT_DIRECTORY}/rvd_swad-${swadVersion}`;
+                        if (!fs.existsSync(swadDir)) {
+                            exitCode = shell.exec(`bee-swad-upgrade --swad-version ${swadVersion} ${optArgs}`).code;
+                            if (exitCode !== 0) process.exit(1);
+                        }
+
+                        if (!fs.existsSync(`${constants.OFT.dir}/${constants.OFT.packageName}`)) {
+                            exitCode = shell.exec(`bee-oft-upgrade --oft-version ${constants.OFT.version}`).code;
+                            if (exitCode !== 0) process.exit(1);
+                        }
+                        if (exitCode == 0) {
+                            const args = process.argv.slice(3);
+                            const options = args.reduce((o, a) => {
+                                if (a === `--${swadVersionKey}` || a === swadVersion || a === '--profile' || a === yargv.profile ||
+                                    a === 'trace' || a === 'convert') {
+                                    return o;
+                                }
+                                const avalue = `"${a}"`;
+                                return o.concat((o) ? ` ${avalue}` : avalue);
+                            }, '');
+                            const outFolder = path.resolve(`build/tracing`);
+                            fs.ensureDirSync(outFolder);
+                            const swadFolder = `${constants.DEFAULT_DIRECTORY}/rvd_swad-${swadVersion}/doc/rvd_swad`;
+                            const commandHTMLOutput = `${constants.OFT.command} trace ${options} ${swadFolder} -o html -f ${outFolder}/tracing.html`;
+                            const commandOREQMOutput = `${constants.OFT.command} convert ${options} ${swadFolder} -f ${outFolder}/tracing.oreqm`;
+                            console.log(`run: ${commandOREQMOutput}`);
+                            shell.exec(commandOREQMOutput);
+                            console.log(`run: ${commandHTMLOutput}`);
+                            shell.exec(commandHTMLOutput);
+                        } else {
+                            utils.rlog(`ERROR: Could not setup environment for openfasttrace 'v${constants.OFT.version}'!`);
+                        }
+                    })
+    .demand(1, "must provide a valid command")
+    .help("h")
+    .alias("h", "help")
+    .argv
+
+process.exit(exitCode);

@@ -1,0 +1,12 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.PREFIX = 'e2e-test-';
+exports.PASSWORD = '1Mustermann2!';
+exports.LOGINNAME_ADMIN = 'admin';
+exports.PASSWORD_ADMIN = 'service';
+exports.OPTION = 'option';
+exports.UUID = 'UUID';
+exports.TITLE = 'title';
+// exports.BASE = 'https://masterdata.test.continental-rvd.de/v1';
+// exports.FIRMWARE_BASE = 'https://firmware.test.continental-rvd.de/v1';
+// exports.APS_BASE = 'https://serviceauth.test.continental-rvd.de/v1';

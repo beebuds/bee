@@ -1,0 +1,23 @@
+{
+    "Version": "2012-10-17",
+    "Id": "Policy1560244892010",
+    "Statement": [
+        {
+            "Sid": "Stmt1560244885658",
+            "Effect": "Allow",
+            "Principal": {
+                "AWS": [
+                    "arn:aws:iam::593609151314:role/ADFS-ResourceAdmin",
+                    "arn:aws:iam::533029526602:role/ADFS-ResourceAdmin"
+                ]
+            },
+            "Action": [
+                "S3:Get*",
+                "s3:List*"
+            ],
+            "Resource": [
+                "arn:aws:s3:::$DEPLOYMENT_BUCKET/$VERSION/*"
+            ]
+        }
+    ]
+}
