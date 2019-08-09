@@ -7,60 +7,127 @@ Bee tools repository contains CLI tools helping you to deal with AWS CloudFormat
 Currently the following commands are supported:
 ````bash
 Commands:
-  bee deploy       Merge, package and deploy CloudFormation template to AWS,
-                   e.g.
+  bee deploy           Merge, package and deploy CloudFormation template to AWS,
+                       e.g.
 
-                   bee deploy
-                   --region <region>
-                   [--stage <stage name, default: development>
-                   --profile <AWS profile>]
+                       bee deploy
+                       --region <region>
+                       [
+                       --release <'true', 'false'>, defaults to 'false'
+                       --stage <stage name, default: development>,
+                       --profile <AWS profile>
+                       ]
 
-  bee itest        Run specified integration tests, e.g.
+  bee itest            Run specified integration tests, e.g.
 
-                   bee itest
-                   --test_spec <path patterns like */**/*.itest.yml>
-                   --stack_name <deployed CloudFormation stack> or --api_id <API
-                   Gateway id>
-                   [--timeout <duration in ms before timeout>
-                   --region <region>
-                   --profile <AWS profile>]
+                       bee itest
+                       --test_spec <path patterns like */**/*.itest.yml>
+                       --stack_name <deployed CloudFormation stack> or --api_id
+                       <API Gateway id>
+                       [--timeout <duration in ms before timeout>
+                       --region <region>
+                       --profile <AWS profile>]
+                       --test_result_file <output file to store test results as
+                       junit xml>
 
-  bee merge        Merge separated CloudFormation template into single template,
-                   e.g.
+  bee merge            Merge separated CloudFormation template into single
+                       template, e.g.
 
-                   bee merge
-                   [--infrastructure_file path/to/infrastructure.yml
-                   --template_file path/to/output-cf-template.yml]
+                       bee merge
+                       [--infrastructure_file path/to/infrastructure.yml
+                       --template_file path/to/output-cf-template.yml]
 
-  bee package      Package CloudFormation template, e.g.
+  bee package          Package CloudFormation template, e.g.
 
-                   bee package
-                   --bucket my-s3-bucket
-                   --bucket_prefix stage/some-prefix
-                   [--template_file my-cf-template.yml
-                   --output_template_file my-packaged-output-template.yml]
+                       bee package
+                       --bucket my-s3-bucket
+                       --bucket_prefix stage/some-prefix
+                       [--template_file my-cf-template.yml
+                       --output_template_file my-packaged-output-template.yml]
 
-  bee just-deploy  Deploy given CloudFormation template to AWS, e.g.
+  bee just-deploy      Deploy given CloudFormation template to AWS, e.g.
 
-                   bee just-deploy
-                   --stack_name my-stack
-                   --parameters_file path/to/parameters.yml
-                   --template_file path/to/my-cf-template.yml
-                   [--profile <aws profile> --region <region>]
+                       bee just-deploy
+                       --stack_name my-stack
+                       --parameters_file path/to/parameters.yml
+                       --template_file path/to/my-cf-template.yml
+                       [--profile <aws profile> --region <region>]
 
-  bee publish      Publish versioned CloudFormation template, e.g.
+  bee publish          Publish versioned CloudFormation template, e.g.
 
-                   bee publish
-                   [--profile <AWS profile>]
+                       bee publish
+                       [--profile <AWS profile>]
+  bee prepare-release  Determine the next release version according to the
+                       current commit statements , e.g.
+
+                       bee prepare-release
+                       [
+                       --output_file, file to store the release versions
+                       (defaults to .bee/release.json)
+                       ]
+  bee release          Create a new release version, tag it in the git repo.,
+                       generate relevant resources (e.g. CHANGELOG.MD, git hub
+                       release notes, etc.), e.g.
+
+                       bee release
+                       [
+                       --check-release-json, check .bee/release.json whether a
+                       release is needed
+                       ]
+                       ]
+
+  bee deploy-service   Deploy a released service of given version to the
+                       specified stage, region and account,
+
+                       bee deploy-service
+                       --service-name <name of the service>, e.g. --service-name
+                       spec-provider
+                       --release-version <version>, e.g. --release-version 0.0.1
+                       --stage <stage name>, e.g. --stage
+                       --region <region>, e.g. --region eu-west-1
+                       [
+                       --parameters key1=value1,key2=value2,..., e.g.
+                       --parameters SINGLE_PARAM=myvalue,LIST_PARAM=https://url1
+                       .com;https://url2.com
+                       or --parameters-file <path parameters file (yml format)>,
+                       e.g. --paramters-file /path/to/my/parameters.yml
+                       ]
+
+  bee run              Execute deploy script file, e.g.
+
+                       bee run
+                       --script <js deploy script>, e.g --script
+                       deploy2contiprelive.js
+                       [
+                       --region <region>, e.g. --region eu-west-1,
+                       --profile <aws profile>, e.g. --profile conti-rvd-test
+                       ]
+
+  bee setup            Setup bee-tools, e.g.
+
+                       bee setup
+  bee gradle           Run gradle
+
+                       bee gradle <options>
+  bee oft              Run openfasttrace,
+                       bee oft
+                       --swad-version <version>, the version of the SWAD, e.g.
+                       --swad-version 1.8.0,
+                       <oft options>, see https://github.com/itsallcode/openfast
+                       trace/raw/develop/doc/usage.txt
+
+
+Options:
+  --version   Show version number                                      [boolean]
+  -h, --help  Show help                                                [boolean]
 ````
 # Installation
 ## AWS CLI
 This tools requires AWS CLI >= 1.16.x in order to function. Please, following this guide https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-install.html.
 
 ## bee-tools
-To install you need access to the https://git-code.asw.zone/RVD/bee-tools repository.
 ````bash
-$ npm i -g git+https://git-code.asw.zone/RVD/bee-tools
+$ npm i -g https://github.com/lingnoi/bee-tools
 ````
 
 To uninstall, run:
