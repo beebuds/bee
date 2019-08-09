@@ -44,7 +44,8 @@ module.exports = (argv) => {
     const serviceName = params.ServiceName;
     const version = argv.release_version ? argv.release_version : Date.now();
     const deploymentBucket = `${serviceName}-${region}-deployment`;
-    const bucketPrefix = (argv.release_version && (deploymentStage !== 'contiprelive' || deploymentStage !== 'contilive')) ? argv.release_version : deploymentStage + '/' + version;
+    //TODO: handling stage names
+    const bucketPrefix = (argv.release_version && (deploymentStage !== 'myprodstage')) ? argv.release_version : deploymentStage + '/' + version;
     const stackName = serviceName + '-' + deploymentStage;
 
     const directoryName = path.resolve(constants.INFRASTRUCTURE_CONSTANTS.defaultOutDirectory);
@@ -60,7 +61,6 @@ module.exports = (argv) => {
         serviceName: serviceName,
         createSystemInfoEndpoint: infrastructureParams.Service.CreateSystemInfoEndpoint,
         stage: deploymentStage,
-        apiDocBucket: `rvd-${serviceName}-${deploymentStage}-api-doc`,
         version: version
     }
 

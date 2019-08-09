@@ -1,7 +1,7 @@
 {
-  "name": "bee-tools",
+  "name": "bee",
   "version": "0.0.0",
-  "description": "Bee Tools for dealing with AWS CloudFormation template, deployments and integration tests",
+  "description": "Bee deployment tool for dealing with AWS CloudFormation template, deployments, tests and many more",
   "bin": {
     "cf-merge": "./bin/bee-cf-merge.js",
     "cf-package": "./bin/bee-cf-package.js",
@@ -12,20 +12,23 @@
     "get-api-id": "./bin/bee-get-api-id.js",
     "create-user": "./bin/bee-create-user.js",
     "delete-user": "./bin/bee-delete-user.js",
-    "set-bucket-policy": "./bin/bee-set-bucket-policy.js",
     "generate-deploy-script": "./bin/bee-generate-deploy-script.js",
     "deploy-service": "./bin/bee-deploy-service.js",
     "bee-aws-upgrade": "./bin/bee-aws-upgrade.js",
     "bee-gradle-upgrade": "./bin/bee-gradle-upgrade.js",
-    "bee-oft-upgrade": "./bin/bee-oft-upgrade.js",
-    "bee-swad-upgrade": "./bin/bee-swad-upgrade.js",
     "bee": "./bin/bee"
   },
   "keywords": [
-    "RVD",
-    "CloudFormation"
+    "bee",
+    "CloudFormation",
+    "cloud",
+    "aws",
+    "Amazon Web Services",
+    "AWS",
+    "artifact-driven deployment",
+    "deployment"
   ],
-  "author": "RVD",
+  "author": "beebuds",
   "license": "ISC",
   "dependencies": {
     "aws-sdk": "^2.472.0",

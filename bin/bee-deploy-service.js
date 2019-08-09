@@ -21,7 +21,7 @@ if (!version) {
 }
 
 if (!argv.stage) {
-    console.error(`ERROR: Missing stage name, use --stage=<stage>, e.g. --stage=contiprelive`);
+    console.error(`ERROR: Missing stage name, use --stage=<stage>, e.g. --stage=mystage`);
     process.exit(1);
 }
 

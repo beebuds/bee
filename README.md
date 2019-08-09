@@ -108,17 +108,11 @@ Commands:
   bee gradle           Run gradle
 
                        bee gradle <options>
-  bee oft              Run openfasttrace,
-                       bee oft
-                       --swad-version <version>, the version of the SWAD, e.g.
-                       --swad-version 1.8.0,
-                       <oft options>, see https://github.com/itsallcode/openfast
-                       trace/raw/develop/doc/usage.txt
-
 
 Options:
   --version   Show version number                                      [boolean]
   -h, --help  Show help                                                [boolean]
+  
 ````
 # Installation
 ## AWS CLI

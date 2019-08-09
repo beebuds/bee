@@ -6,10 +6,7 @@
             "Sid": "Stmt1560244885658",
             "Effect": "Allow",
             "Principal": {
-                "AWS": [
-                    "arn:aws:iam::593609151314:role/ADFS-ResourceAdmin",
-                    "arn:aws:iam::533029526602:role/ADFS-ResourceAdmin"
-                ]
+                "AWS": []
             },
             "Action": [
                 "S3:Get*",

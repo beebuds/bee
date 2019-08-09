@@ -55,15 +55,15 @@ function generateAndUploadScriptForStage(stage) {
     uploadDeployScript(generateScriptFileNameByStage(stage));
 }
 
-if (shell.exec(`set-bucket-policy --bucket=${cfVariables.deploymentBucket} --release-version=${cfVariables.bucketPrefix} ${args}`).code !== 0) {
-    utils.rlog(`Error: Could not set bucket policy for '${cfVariables.deploymentBucket}'`);
-    process.exit(1);
-}
+//TODO: handling cross account deployment bucket access
+// if (shell.exec(`set-bucket-policy --bucket=${cfVariables.deploymentBucket} --release-version=${cfVariables.bucketPrefix} ${args}`).code !== 0) {
+//     utils.rlog(`Error: Could not set bucket policy for '${cfVariables.deploymentBucket}'`);
+//     process.exit(1);
+// }
 
 if (shell.exec(`cd ${constants.INFRASTRUCTURE_CONSTANTS.infrastrutureDirectory} && aws s3 cp ${cfVariables.templateFile} ${s3Uri} ${args}`).code !== 0) {
     utils.rlog(`Error: Could not publish '${cfVariables.templateFile}' to ${s3Uri}`);
     process.exit(1);
 };
 
-generateAndUploadScriptForStage('contiprelive');
-generateAndUploadScriptForStage('contilive');
+generateAndUploadScriptForStage('mystage');

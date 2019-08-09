@@ -255,7 +255,7 @@ const argv = yargs.usage("$0 command")
             }
             arguments = arguments.concat(` --release-version ${version}`);
             if (!stage || typeof (stage) !== 'string') {
-                console.error(`ERROR: Missing stage, use --stage <name>, e.g. --stage contilive`);
+                console.error(`ERROR: Missing stage, use --stage <name>, e.g. --stage mystage`);
                 process.exit(1);
             }
             arguments = arguments.concat(` --stage ${stage}`);
@@ -277,17 +277,17 @@ const argv = yargs.usage("$0 command")
         })
     .command("run", `Execute deploy script file, e.g.
         \nbee run
-        --script <js deploy script>, e.g --script deploy2contiprelive.js
+        --script <js deploy script>, e.g --script myscript.js
         [
             --region <region>, e.g. --region eu-west-1,
-            --profile <aws profile>, e.g. --profile conti-rvd-test
+            --profile <aws profile>, e.g. --profile myprofile
         ]
         `, (yargs) => {
             const args = yargs.argv;
             let script = args.script;
             const isS3Url = () => args.script.includes('s3.amazonaws.com') || args.script.includes('s3://');
             if (!script || typeof (script) !== 'string') {
-                console.error(`ERROR: Missing script, use --script <js file>, e.g. --script deploy2prelive.js`);
+                console.error(`ERROR: Missing script, use --script <js file>, e.g. --script myscript.js`);
                 process.exit(1);
             } else if (isS3Url()) {
                 let profileArgs = ''
@@ -342,54 +342,7 @@ const argv = yargs.usage("$0 command")
                     } else {
                         utils.rlog(`ERROR: Could not download and install gradle 'v${constants.GRADLE.version}'!`);
                     }
-                }).command("oft",
-                    `Run openfasttrace,
-                    bee oft 
-                    --swad-version <version>, the version of the SWAD, e.g. --swad-version 1.8.0,
-                    <oft options>, see https://github.com/itsallcode/openfasttrace/raw/develop/doc/usage.txt
-                    `, (yargs) => {
-                        const yargv = yargs.argv;
-                        const swadVersionKey = 'swad-version';
-                        const swadVersion = yargv[swadVersionKey];
-
-                        if (!swadVersion || typeof (swadVersion) !== 'string') {
-                            utils.rlog(`Missing required parameter --swad-version <version>, use e.g. --swad-version 1.8.0`);
-                            process.exit(1);
-                        }
-                        let optArgs = yargv.profile && typeof (yargv.profile) === 'string' ? `--profile ${yargv.profile}` : '';
-                        const swadDir = `${constants.DEFAULT_DIRECTORY}/rvd_swad-${swadVersion}`;
-                        if (!fs.existsSync(swadDir)) {
-                            exitCode = shell.exec(`bee-swad-upgrade --swad-version ${swadVersion} ${optArgs}`).code;
-                            if (exitCode !== 0) process.exit(1);
-                        }
-
-                        if (!fs.existsSync(`${constants.OFT.dir}/${constants.OFT.packageName}`)) {
-                            exitCode = shell.exec(`bee-oft-upgrade --oft-version ${constants.OFT.version}`).code;
-                            if (exitCode !== 0) process.exit(1);
-                        }
-                        if (exitCode == 0) {
-                            const args = process.argv.slice(3);
-                            const options = args.reduce((o, a) => {
-                                if (a === `--${swadVersionKey}` || a === swadVersion || a === '--profile' || a === yargv.profile ||
-                                    a === 'trace' || a === 'convert') {
-                                    return o;
-                                }
-                                const avalue = `"${a}"`;
-                                return o.concat((o) ? ` ${avalue}` : avalue);
-                            }, '');
-                            const outFolder = path.resolve(`build/tracing`);
-                            fs.ensureDirSync(outFolder);
-                            const swadFolder = `${constants.DEFAULT_DIRECTORY}/rvd_swad-${swadVersion}/doc/rvd_swad`;
-                            const commandHTMLOutput = `${constants.OFT.command} trace ${options} ${swadFolder} -o html -f ${outFolder}/tracing.html`;
-                            const commandOREQMOutput = `${constants.OFT.command} convert ${options} ${swadFolder} -f ${outFolder}/tracing.oreqm`;
-                            console.log(`run: ${commandOREQMOutput}`);
-                            shell.exec(commandOREQMOutput);
-                            console.log(`run: ${commandHTMLOutput}`);
-                            shell.exec(commandHTMLOutput);
-                        } else {
-                            utils.rlog(`ERROR: Could not setup environment for openfasttrace 'v${constants.OFT.version}'!`);
-                        }
-                    })
+                })
     .demand(1, "must provide a valid command")
     .help("h")
     .alias("h", "help")

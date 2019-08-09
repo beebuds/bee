@@ -38,28 +38,8 @@ module.exports.INFRASTRUCTURE_CONSTANTS = {
 
 const route53Constants = {
     development: {
-        certificateArn: 'arn:aws:acm:us-east-1:961348157110:certificate/f103c866-fd21-407c-813a-f4ff55ad8310',
-        hostedZoneName: 'dev.continental-rvd.de.',
-        basePath: 'v1'
-    },
-    integration: {
-        certificateArn: 'arn:aws:acm:us-east-1:961348157110:certificate/13b52ff5-546e-4a65-92af-3f4f21c6690c',
-        hostedZoneName: 'integration.continental-rvd.de.',
-        basePath: 'v1'
-    },
-    test: {
-        certificateArn: 'arn:aws:acm:us-east-1:961348157110:certificate/10199254-6bdf-4918-b9f4-f3701484939c',
-        hostedZoneName: 'test.continental-rvd.de.',
-        basePath: 'v1'
-    },
-    contiprelive: {
-        certificateArn: 'arn:aws:acm:eu-west-1:593609151314:certificate/b74dc5ac-27b0-46d9-b038-9def84db610d',
-        hostedZoneName: 'prelive.continental-rvd.de.',
-        basePath: 'v1'
-    },
-    contilive: {
-        certificateArn: 'arn:aws:acm:us-east-1:533029526602:certificate/154ec98c-a1c1-45af-9c41-8dce6ba493b0',
-        hostedZoneName: 'continental-connected-services.com.',
+        certificateArn: 'my-certificate-arn',
+        hostedZoneName: 'myhosted.zone.name.',
         basePath: 'v1'
     }
 }
